@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>xrp-ledger.toml Editor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="icon" href="data:,">
+    <script type="text/javascript" src="js/libs/fast-toml.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
+            <div class="container-fluid">
+                <a href="#" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+                    <span class="fs-4">&nbsp;</span>
+                </a>
+                <div>
+                    <a href="https://github.com/radynamics/DalliPay" class="btn btn-outline-secondary px-4 me-sm-3" tabindex="-1" role="button" target="_blank">Source (GitHub)</a>
+                    <a class="btn btn-primary" tabindex="-1" role="button" id="download" data-i18n="createXrpLedgerToml">Create xrp-ledger.toml</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="px-4 pt-5 my-5 text-center">
+        <h1 class="display-4 fw-bold">xrp-ledger.toml Editor</h1>
+        <div class="col-lg-6 mx-auto">
+            <p class="lead mb-4" data-i18n="overviewText">Please note you must manually upload the created file to your webserver. The file must be publicly available at <code>www.domain.com/.well-known/xrp-ledger.toml</code></p>
+        </div>
+
+        <div class="col-lg-7 mx-auto my-3">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" id="url" aria-describedby="basic-addon3" placeholder="https://www.bithomp.com" value="">
+                <span class="input-group-text" id="urlSuffix">/.well-known/xrp-ledger.toml</span>
+                <button class="btn btn-primary" type="button" id="openUrl" data-i18n="load">Load</button>
+            </div>
+            <div class="d-flex justify-content-center">
+                <div class="col-6">
+                    <label for="openFile" class="form-label" data-i18n="orLocalFile">or open a local file</label>
+                    <input class="form-control" type="file" id="openFile" accept=".toml, .txt">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container px-4">
+        <div class="alert alert-danger visually-hidden" role="alert" id="error"></div>
+        <div id="toml">
+            <div>
+                <h3 data-i18n="titleMetadata">Metadata</h3>
+                <div id="metadata"></div>
+            </div>
+            <div class="my-2">
+                <h3 data-i18n="titlePrincipals">Principals</h3>
+                <div id="principals"></div>
+                <div class="d-flex justify-content-center m-3">
+                    <button id="addPrincipal" class="btn btn-outline-primary" data-i18n="add">Add</button>
+                </div>
+            </div>
+            <div class="my-2">
+                <h3 data-i18n="titleAccounts">Accounts / Wallets</h3>
+                <div id="accounts"></div>
+                <div class="d-flex justify-content-center m-3">
+                    <button id="addAccount" class="btn btn-outline-primary" data-i18n="add">Add</button>
+                </div>
+            </div>
+            <div class="my-4">
+                <a class="btn btn-outline-primary" data-bs-toggle="collapse" href="#more" role="button" aria-expanded="false" aria-controls="more" data-i18n="toggleAdditional">
+                    Toggle additional settings
+                </a>
+                <div class="collapse" id="more">
+                    <div class="my-2">
+                        <h3 data-i18n="titleValidators">Validators</h3>
+                        <div id="validators"></div>
+                        <div class="d-flex justify-content-center m-3">
+                            <button id="addValidator" class="btn btn-outline-primary" data-i18n="add">Add</button>
+                        </div>
+                    </div>
+                    <div class="my-2">
+                        <h3 data-i18n="titleServer">Server</h3>
+                        <div id="servers"></div>
+                        <div class="d-flex justify-content-center m-3">
+                            <button id="addServer" class="btn btn-outline-primary" data-i18n="add">Add</button>
+                        </div>
+                    </div>
+                    <div class="my-2">
+                        <h3 data-i18n="titleCurrencies">Issued Currencies</h3>
+                        <div id="currencies"></div>
+                        <div class="d-flex justify-content-center m-3">
+                            <button id="addCurrency" class="btn btn-outline-primary" data-i18n="add">Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="b-example-divider"></div>
+
+    <div class="container">
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+            <div class="col-md-4 d-flex align-items-center small">
+                <span class="mb-3 mb-md-0 text-muted small">© 2023 <a href="https://www.radynamics.com" class="text-muted text-decoration-none" target="_blank">radynamics | software solutions</a></span>
+            </div>
+        </footer>
+    </div>
+
+    <script type="text/javascript">
+        function openUrl() {
+            var url = document.getElementById('url').value
+            if (!url.startsWith('https://') && !url.startsWith('http://')) {
+                url = `https://${url}`
+                document.getElementById('url').value = url
+            }
+
+            var tomlUrl = url + document.getElementById('urlSuffix').innerText
+            // Workaround for missing CORS config.
+            var loaderUrl = `loader.php?url=${tomlUrl}`
+
+            document.getElementById('error').classList.add("visually-hidden")
+
+            fetch(loaderUrl)
+                .then((res) => {
+                    if (res.status != 200) {
+                        if(res.status == 404) {
+                            showError(i18next.t('loadingError404', { url: tomlUrl }))
+                        } else {
+                            showError(i18next.t('loadingErrorGeneric', { url: tomlUrl, code: res.status }))
+                        }
+                    }
+                    return res.text()
+                })
+                .then(text =>  loadToml(text))
+                .catch(err => {
+                    console.error(err)
+                    showError(i18next.t('loadingException', { msg: err.message }))
+                })
+        }
+        function showError(msg) {
+            let alert = document.getElementById('error')
+            alert.innerText = msg
+            alert.classList.remove("visually-hidden")
+        }
+        function openFile(event) {
+            if (event.target.files.length == 0) return
+            var file = event.target.files[0]
+
+            const reader = new FileReader();
+            reader.addEventListener('load', (event) => {
+                loadToml(event.target.result)
+            });
+            reader.readAsText(file);
+        }
+
+        function downloadToml() {
+            var toml = createToml()
+            download(toml);
+        }
+        function createToml() {
+            var principals = []
+            {
+                var children = document.getElementById("principals").children
+                for (var i = 0; i < children.length; i++) {
+                    var key = createKey("principals", i)
+                    principals.push(
+                        {
+                            name: document.getElementById(`${key}.name`).value,
+                            email: getOrNull(document.getElementById(`${key}.email`)),
+                        }
+                    )
+                }
+            }
+            var accounts = []
+            {
+                var children = document.getElementById("accounts").children
+                for (var i = 0; i < children.length; i++) {
+                    var key = createKey("accounts", i)
+                    accounts.push(
+                        {
+                            address: document.getElementById(`${key}.address`).value,
+                            network: getOrNull(document.getElementById(`${key}.network`)),
+                            desc: getOrNull(document.getElementById(`${key}.desc`)),
+                        }
+                    )
+                }
+            }
+            var validators = []
+            {
+                var children = document.getElementById("validators").children
+                for (var i = 0; i < children.length; i++) {
+                    var key = createKey("validators", i)
+                    validators.push(
+                        {
+                            public_key: document.getElementById(`${key}.public_key`).value,
+                            attestation: getOrNull(document.getElementById(`${key}.attestation`)),
+                            network: getOrNull(document.getElementById(`${key}.network`)),
+                            owner_country: getOrNull(document.getElementById(`${key}.owner_country`)),
+                            server_country: getOrNull(document.getElementById(`${key}.server_country`)),
+                            unl: getOrNull(document.getElementById(`${key}.unl`)),
+                        }
+                    )
+                }
+            }
+            var servers = []
+            {
+                var children = document.getElementById("servers").children
+                for (var i = 0; i < children.length; i++) {
+                    var key = createKey("servers", i)
+                    servers.push(
+                        {
+                            json_rpc: getOrNull(document.getElementById(`${key}.json_rpc`)),
+                            ws: getOrNull(document.getElementById(`${key}.ws`)),
+                            peer: getOrNull(document.getElementById(`${key}.peer`)),
+                            network: getOrNull(document.getElementById(`${key}.network`)),
+                        }
+                    )
+                }
+            }
+            var currencies = []
+            {
+                var children = document.getElementById("currencies").children
+                for (var i = 0; i < children.length; i++) {
+                    var key = createKey("currencies", i)
+                    currencies.push(
+                        {
+                            code: document.getElementById(`${key}.code`).value,
+                            issuer: document.getElementById(`${key}.issuer`).value,
+                            network: getOrNull(document.getElementById(`${key}.network`)),
+                            symbol: getOrNull(document.getElementById(`${key}.symbol`)),
+                            display_decimals: getNumberOrNull(document.getElementById(`${key}.display_decimals`)),
+                        }
+                    )
+                }
+            }
+
+            var content = []
+            content.push(`# For help understanding this xrp-ledger.toml file, see:`)
+            content.push(`# https://xrpl.org/xrp-ledger-toml.html`)
+            content.push(``)
+            content.push(`[METADATA]`)
+            var modified = getDateOrNull(document.getElementById('metadata.0.modified'))
+            var expires = getDateOrNull(document.getElementById('metadata.0.expires'))
+            append(content, 'modified', modified)
+            append(content, 'expires', expires)
+
+            for (var i = 0; i < principals.length; i++) {
+                var o = principals[i];
+                content.push(``)
+                content.push(`[[PRINCIPALS]]`)
+                append(content, 'name', o.name)
+                append(content, 'email', o.email)
+            }
+            for (var i = 0; i < accounts.length; i++) {
+                var o = accounts[i];
+                content.push(``)
+                content.push(`[[ACCOUNTS]]`)
+                append(content, 'address', o.address)
+                append(content, 'network', o.network)
+                append(content, 'desc', o.desc)
+            }
+            for (var i = 0; i < validators.length; i++) {
+                var o = validators[i];
+                content.push(``)
+                content.push(`[[VALIDATORS]]`)
+                append(content, 'public_key', o.public_key)
+                append(content, 'attestation', o.attestation)
+                append(content, 'network', o.network)
+                append(content, 'owner_country', o.owner_country)
+                append(content, 'server_country', o.server_country)
+                append(content, 'unl', o.unl)
+            }
+            for (var i = 0; i < servers.length; i++) {
+                var o = servers[i]
+                content.push(``)
+                content.push(`[[SERVERS]]`)
+                append(content, 'json_rpc', o.json_rpc)
+                append(content, 'ws', o.ws)
+                append(content, 'peer', o.peer)
+                append(content, 'network', o.network)
+            }
+            for (var i = 0; i < currencies.length; i++) {
+                var o = currencies[i]
+                content.push(``)
+                content.push(`[[CURRENCIES]]`)
+                append(content, 'code', o.code)
+                append(content, 'issuer', o.issuer)
+                append(content, 'network', o.network)
+                append(content, 'symbol', o.symbol)
+                append(content, 'display_decimals', o.display_decimals)
+            }
+
+            const NEWLINE = '\r\n'
+            return content.join(NEWLINE)
+        }
+        function append(content, name, value) {
+            if (value == null) return
+
+            if (typeof value === 'string' || value instanceof String) {
+                content.push(`${name} = "${value}"`)
+            } else if (value instanceof Date) {
+                var formatted = value.toISOString()
+                content.push(`${name} = ${formatted}`)
+            } else {
+                content.push(`${name} = ${value}`)
+            }
+        }
+
+        function download(content) {
+            const file = new Blob([content], { type: 'text/plain;charset=utf-8' });
+
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(file);
+            a.download = 'xrp-ledger.toml';
+            a.click();
+
+            URL.revokeObjectURL(a.href)
+        }
+
+        function clear() {
+            document.getElementById("metadata").innerHTML = ''
+            document.getElementById("principals").innerHTML = ''
+            document.getElementById("accounts").innerHTML = ''
+            document.getElementById("validators").innerHTML = ''
+            document.getElementById("servers").innerHTML = ''
+            document.getElementById("currencies").innerHTML = ''
+        }
+
+        function loadToml(content) {
+            var data = TOML.parse(content);
+
+            clear()
+            var metadata = document.getElementById("metadata")
+            var principals = document.getElementById("principals")
+            var accounts = document.getElementById("accounts")
+            var validators = document.getElementById("validators")
+            var server = document.getElementById("server")
+            var currencies = document.getElementById("currencies")
+
+            if (data.METADATA != null) {
+                appendMetadata(metadata, data.METADATA)
+            }
+            if (data.PRINCIPALS != null) {
+                for (var i = 0; i < data.PRINCIPALS.length; i++) {
+                    appendPrincipal(principals, data.PRINCIPALS[i]);
+                }
+            }
+            if (data.ACCOUNTS != null) {
+                for (var i = 0; i < data.ACCOUNTS.length; i++) {
+                    appendAccount(accounts, data.ACCOUNTS[i]);
+                }
+            }
+
+            if (data.VALIDATORS != null) {
+                for (var i = 0; i < data.VALIDATORS.length; i++) {
+                    appendValidator(validators, data.VALIDATORS[i]);
+                }
+            }
+            if (data.SERVERS != null) {
+                for (var i = 0; i < data.SERVERS.length; i++) {
+                    appendServer(servers, data.SERVERS[i]);
+                }
+            }
+            if (data.CURRENCIES != null) {
+                for (var i = 0; i < data.CURRENCIES.length; i++) {
+                    appendCurrency(currencies, data.CURRENCIES[i]);
+                }
+            }
+        }
+        function appendDatetimeField(container, id, caption, value) {
+            container.appendChild(createLabel(caption, id))
+
+            var txt = createInputText(id)
+            container.appendChild(txt)
+            txt.setAttribute('value', value == '' ? '' : formatDate(value))
+        }
+        function appendTextField(container, id, caption, value, placeholder) {
+            container.appendChild(createLabel(caption, id))
+
+            var txt = createInputText(id, value, placeholder)
+            container.appendChild(txt)
+        }
+        function createLabel(caption, forCtrl) {
+            var lbl = document.createElement('label')
+            lbl.innerHTML = caption
+            lbl.class = "form-label"
+            lbl.for = forCtrl
+            return lbl
+        }
+        function createInputText(id, value, placeholder) {
+            var txt = document.createElement("input")
+            txt.setAttribute('type', 'text')
+            txt.setAttribute('id', id)
+            txt.setAttribute('class', 'form-control')
+            if (placeholder != null) {
+                txt.setAttribute('placeholder', placeholder)
+            }
+            txt.setAttribute('value', value)
+            return txt
+        }
+        function createDiv(classes) {
+            var div = document.createElement("div")
+            div.setAttribute('class', classes)
+            return div
+        }
+
+        function appendMetadata(container, data) {
+            var div = createDiv('row m-1')
+            container.appendChild(div)
+
+            var key = createKey("metadata", container.children.length - 1) // -1 due add button
+            {
+                var d = createDiv('col')
+                div.appendChild(d)
+                appendDatetimeField(d, `${key}.modified`, i18next.t('modified'), getOrEmpty(data.modified))
+            }
+            {
+                var d = createDiv('col')
+                div.appendChild(d)
+                appendDatetimeField(d, `${key}.expires`, i18next.t('expires'), getOrEmpty(data.expires))
+            }
+        }
+        function appendPrincipal(container, data) {
+            var div = createDiv('row m-1')
+            container.appendChild(div)
+
+            var key = createKey("principals", container.children.length - 1) // -1 due add button
+            {
+                var d = createDiv('col')
+                div.appendChild(d)
+                d.appendChild(createInputText(`${key}.name`, getOrEmpty(data.name), i18next.t('placeholderCompany')))
+            }
+            {
+                var d = createDiv('col')
+                div.appendChild(d)
+                d.appendChild(createInputText(`${key}.email`, getOrEmpty(data.email), i18next.t('placeholderMail')))
+            }
+            {
+                var d = createDiv('col-2 d-flex')
+                div.appendChild(d)
+                d.appendChild(createRemoveButton(div));
+            }
+        }
+        function appendAccount(container, data) {
+            var div = createDiv('row m-1')
+            container.appendChild(div)
+
+            var key = createKey("accounts", container.children.length - 1) // -1 due add button
+            {
+                var d = createDiv('col')
+                div.appendChild(d)
+                d.appendChild(createInputText(`${key}.address`, getOrEmpty(data.address), "rn8A9923tg..."))
+            }
+            {
+                var d = createDiv('col-1')
+                div.appendChild(d)
+                d.appendChild(createInputText(`${key}.network`, getOrEmpty(data.network, "main"), "main"))
+            }
+            {
+                var d = createDiv('col')
+                div.appendChild(d)
+                d.appendChild(createInputText(`${key}.desc`, getOrEmpty(data.desc), i18next.t('placeholderAccountDesc')))
+            }
+            {
+                var d = createDiv('col-2 d-flex')
+                div.appendChild(d)
+                d.appendChild(createRemoveButton(div));
+            }
+        }
+        function appendValidator(container, data) {
+            var div = createDiv('m-1')
+            container.appendChild(div)
+
+            var key = createKey("validators", container.children.length - 1) // -1 due add button
+            appendTextField(div, `${key}.public_key`, "Public Key", getOrEmpty(data.public_key), "rn8A9923tg...");
+            appendTextField(div, `${key}.attestation`, "Attestation", getOrEmpty(data.attestation), "F0D14D7...");
+            appendTextField(div, `${key}.network`, "Network", getOrEmpty(data.network), "main");
+            appendTextField(div, `${key}.owner_country`, "Country Owner", getOrEmpty(data.owner_country), "US");
+            appendTextField(div, `${key}.server_country`, "Country Server", getOrEmpty(data.server_country), "US");
+            appendTextField(div, `${key}.unl`, "UNL", getOrEmpty(data.unl));
+            div.appendChild(createRemoveButton(div));
+        }
+        function appendServer(container, data) {
+            var div = createDiv('m-1')
+            container.appendChild(div)
+
+            var key = createKey("servers", container.children.length - 1) // -1 due add button
+            appendTextField(div, `${key}.json_rpc`, "JSON RPC", getOrEmpty(data.json_rpc), "https://xrpl.ws");
+            appendTextField(div, `${key}.ws`, "WebSocket RPC", getOrEmpty(data.ws), "wss://xrpl.ws");
+            appendTextField(div, `${key}.peer`, "Peer", getOrEmpty(data.peer));
+            appendTextField(div, `${key}.network`, "Network", getOrEmpty(data.network), "main");
+            div.appendChild(createRemoveButton(div));
+        }
+        function appendCurrency(container, data) {
+            var div = createDiv('m-1')
+            container.appendChild(div)
+
+            var key = createKey("currencies", container.children.length - 1) // -1 due add button
+            appendTextField(div, `${key}.code`, "Code", getOrEmpty(data.code), "USD");
+            appendTextField(div, `${key}.issuer`, "Issuer", getOrEmpty(data.issuer), "rn8A9923tg...");
+            appendTextField(div, `${key}.network`, "Network", getOrEmpty(data.network), "main");
+            appendTextField(div, `${key}.symbol`, "Symbol", getOrEmpty(data.symbol), "$");
+            appendTextField(div, `${key}.display_decimals`, "Display decimals", getOrEmpty(data.display_decimals), "2");
+            div.appendChild(createRemoveButton(div));
+        }
+
+        function createRemoveButton(container) {
+            var b = document.createElement("button")
+            b.innerHTML = i18next.t('remove')
+            b.setAttribute('class', 'btn btn-outline-secondary align-self-end')
+            b.addEventListener("click", function () {
+                container.remove()
+            })
+            return b
+        }
+        function createKey(section, counter) {
+            return `${section}.${counter}`
+        }
+
+        function init() {
+            addMetadata()
+            addPrincipal()
+            addAccount()
+        }
+
+        function addMetadata() {
+            appendMetadata(document.getElementById("metadata"), { modified: new Date() })
+        }
+        function addPrincipal() {
+            appendPrincipal(document.getElementById("principals"), {})
+        }
+        function addAccount() {
+            appendAccount(document.getElementById("accounts"), {})
+        }
+        function addValidator() {
+            appendValidator(document.getElementById("validators"), {})
+        }
+        function addServer() {
+            appendServer(document.getElementById("servers"), {})
+        }
+        function addCurrency() {
+            appendCurrency(document.getElementById("currencies"), {})
+        }
+
+        function getOrDefault(value, defaultValue) {
+            return value == null ? defaultValue : value
+        }
+        function getOrEmpty(value) {
+            return getOrDefault(value, "")
+        }
+        function getOrNull(txt) {
+            return txt.value == "" ? null : txt.value
+        }
+        function getDateOrNull(txt) {
+            var value = getOrNull(txt)
+            if(value == null) return null
+            var date = Date.parse(value)            
+            return date == NaN ? null : new Date(date)
+        }
+        function getNumberOrNull(txt) {
+            var value = getOrNull(txt)
+            return value == null ? null : new Number(value)
+        }
+        function padTo2Digits(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        function formatDate(date) {
+            return (
+                [
+                    date.getFullYear(),
+                    padTo2Digits(date.getMonth() + 1),
+                    padTo2Digits(date.getDate()),
+                ].join('-') +
+                ' ' +
+                [
+                    padTo2Digits(date.getHours()),
+                    padTo2Digits(date.getMinutes()),
+                    padTo2Digits(date.getSeconds()),
+                ].join(':')
+            );
+        }
+
+        window.addEventListener("load", init);
+        document.getElementById("download").addEventListener("click", downloadToml);
+        document.getElementById("openUrl").addEventListener("click", openUrl);
+        document.getElementById("openFile").addEventListener("change", openFile);
+
+        document.getElementById("addPrincipal").addEventListener("click", addPrincipal);
+        document.getElementById("addAccount").addEventListener("click", addAccount);
+        document.getElementById("addValidator").addEventListener("click", addValidator);
+        document.getElementById("addServer").addEventListener("click", addServer);
+        document.getElementById("addCurrency").addEventListener("click", addCurrency);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+
+    <script type="text/javascript" src="js/libs/i18next.min.js"></script>
+    <script type="text/javascript" src="js/common.js"></script>
+    <script type="text/javascript">
+        function getTranslations() {
+            return {
+                de: {
+                    translation: {
+                        "overviewText": "Bitte beachten Sie, dass Sie die erstellte Datei manuell auf Ihren Webserver hochladen müssen. Die Datei muss unter <code>www.domain.com/.well-known/xrp-ledger.toml öffentlich verfügbar sein.",
+
+                        "createXrpLedgerToml": "xrp-ledger.toml erstellen",
+                        "orLocalFile": "oder öffnen Sie eine lokale Datei",
+                        "titleMetadata": "Metadaten",
+                        "titlePrincipals": "Eigentümer",
+                        "add": "Neu",
+                        "remove": "Entfernen",
+                        "titleAccounts": "Konten / Wallets",
+                        "toggleAdditional": "Zusätzliche Einstellungen ein/-ausblenden",
+                        "titleValidators": "Validatoren",
+                        "titleServer": "Server",
+                        "titleCurrencies": "Emittierte Währungen",
+
+                        "loadingError404": "{{- url}} konnte nicht gefunden werden.",
+                        "loadingErrorGeneric": "Laden von {{- url}} schlug mit Fehler {{code}} fehl.",
+                        "loadingException": "Unerwarteter Fehler während dem Laden. {{msg}}",
+
+                        "modified": "Bearbeitet",
+                        "expires": "Ablauf",
+                        "placeholderCompany": "Unternehmen AG",
+                        "placeholderMail": "buchhaltung@unternehmen.com",
+                        "placeholderAccountDesc": "Buchhaltung",
+
+
+                        "__dummy": ""
+                    }
+                },
+                en: {
+                    translation: {
+                        "remove": "Remove",
+
+                        "loadingError404": "Could not find {{- url}}",
+                        "loadingErrorGeneric": "Loading {{- url}} failed with Status {{code}}.",
+                        "loadingException": "Unexpecter error while loading. {{msg}}",
+
+                        "modified": "Modified",
+                        "expires": "Expires",
+                        "placeholderCompany": "Company Inc.",
+                        "placeholderMail": "accounting@company.com",
+                        "placeholderAccountDesc": "Accounting Dept.",
+                    }
+                }
+            }
+        }
+
+        localizeAll(navigator.language, getTranslations(), function () { });
+    </script>
+</body>
+
+</html>
