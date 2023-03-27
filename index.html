@@ -109,7 +109,8 @@
 
     <script type="text/javascript">
         function openUrl() {
-            var url = document.getElementById('url').value
+            var url = document.getElementById('url').value.trim()
+            if(url.length == 0) return
             if (!url.startsWith('https://') && !url.startsWith('http://')) {
                 url = `https://${url}`
                 document.getElementById('url').value = url
