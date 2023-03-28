@@ -93,6 +93,12 @@
                             <button id="addCurrency" class="btn btn-outline-primary" data-i18n="add">Add</button>
                         </div>
                     </div>
+                    <div class="my-2">
+                        <h3 data-i18n="titleAdditional">Additional Sections</h3>
+                        <div id="additional">
+                            <p data-i18n="none">None</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -163,19 +169,37 @@
             var content = []
             content.push(`# For help understanding this xrp-ledger.toml file, see:`)
             content.push(`# https://xrpl.org/xrp-ledger-toml.html`)
-            content.push(``)
-            content.push(`[METADATA]`)
-            var modified = getDateOrNull(document.getElementById('metadata.0.modified'))
-            var expires = getDateOrNull(document.getElementById('metadata.0.expires'))
-            append(content, 'modified', modified)
-            append(content, 'expires', expires)
 
             // Please note, that a loaded xrp-ledger.toml may contain more values in various sections than mentioned in the specification.
-            appendSection(content, "PRINCIPALS", document.getElementById("principals").children, 'principals')
-            appendSection(content, "ACCOUNTS", document.getElementById("accounts").children, 'accounts')
-            appendSection(content, "VALIDATORS", document.getElementById("validators").children, 'validators')
-            appendSection(content, "SERVERS", document.getElementById("servers").children, 'servers')
-            appendSection(content, "CURRENCIES", document.getElementById("currencies").children, 'currencies')
+            for (var key of Object.keys(currentModel)) {
+                switch (key) {
+                    case "METADATA":
+                        content.push(``)
+                        content.push(`[METADATA]`)
+                        append(content, 'modified', getDateOrNull(document.getElementById('metadata.0.modified')))
+                        append(content, 'expires', getDateOrNull(document.getElementById('metadata.0.expires')))
+                        break
+                    case "PRINCIPALS":
+                        appendSection(content, "PRINCIPALS", document.getElementById("principals").children, 'principals')
+                        break
+                    case "ACCOUNTS":
+                        appendSection(content, "ACCOUNTS", document.getElementById("accounts").children, 'accounts')
+                        break;
+                    case "VALIDATORS":
+                        appendSection(content, "VALIDATORS", document.getElementById("validators").children, 'validators')
+                        break;
+                    case "SERVERS":
+                        appendSection(content, "SERVERS", document.getElementById("servers").children, 'servers')
+                        break;
+                    case "CURRENCIES":
+                        appendSection(content, "CURRENCIES", document.getElementById("currencies").children, 'currencies')
+                        break;
+                    default:
+                        var sectionId = createKeyAdditional(key)
+                        appendSection(content, key, document.getElementById(sectionId).children, sectionId)
+                        break;
+                }
+            }
 
             const NEWLINE = '\r\n'
             return content.join(NEWLINE)
@@ -231,6 +255,7 @@
             document.getElementById("validators").innerHTML = ''
             document.getElementById("servers").innerHTML = ''
             document.getElementById("currencies").innerHTML = ''
+            document.getElementById("additional").innerHTML = ''
         }
 
         function loadToml(content) {
@@ -244,34 +269,52 @@
             var validators = document.getElementById("validators")
             var server = document.getElementById("servers")
             var currencies = document.getElementById("currencies")
+            var additional = document.getElementById("additional")
 
-            if (data.METADATA != null) {
-                appendMetadata(metadata, data.METADATA)
-            }
-            if (data.PRINCIPALS != null) {
-                for (var i = 0; i < data.PRINCIPALS.length; i++) {
-                    appendPrincipal(principals, data.PRINCIPALS[i]);
-                }
-            }
-            if (data.ACCOUNTS != null) {
-                for (var i = 0; i < data.ACCOUNTS.length; i++) {
-                    appendAccount(accounts, data.ACCOUNTS[i]);
-                }
-            }
+            for (var key of Object.keys(data)) {
+                var value = data[key]
+                switch (key) {
+                    case "METADATA":
+                        appendMetadata(metadata, value)
+                        break;
+                    case "PRINCIPALS":
+                        for (var i = 0; i < value.length; i++) {
+                            appendPrincipal(principals, value[i])
+                        }
+                        break;
+                    case "ACCOUNTS":
+                        for (var i = 0; i < value.length; i++) {
+                            appendAccount(accounts, value[i])
+                        }
+                        break;
+                    case "VALIDATORS":
+                        for (var i = 0; i < value.length; i++) {
+                            appendValidator(validators, value[i])
+                        }
+                        break;
+                    case "SERVERS":
+                        for (var i = 0; i < value.length; i++) {
+                            appendServer(servers, value[i])
+                        }
+                        break;
+                    case "CURRENCIES":
+                        for (var i = 0; i < value.length; i++) {
+                            appendCurrency(currencies, value[i])
+                        }
+                        break;
+                    default:
+                        var section = document.createElement("div")
+                        additional.appendChild(section)
+                        section.id = createKeyAdditional(key)
 
-            if (data.VALIDATORS != null) {
-                for (var i = 0; i < data.VALIDATORS.length; i++) {
-                    appendValidator(validators, data.VALIDATORS[i]);
-                }
-            }
-            if (data.SERVERS != null) {
-                for (var i = 0; i < data.SERVERS.length; i++) {
-                    appendServer(servers, data.SERVERS[i]);
-                }
-            }
-            if (data.CURRENCIES != null) {
-                for (var i = 0; i < data.CURRENCIES.length; i++) {
-                    appendCurrency(currencies, data.CURRENCIES[i]);
+                        if (Array.isArray(value)) {
+                            for (var i = 0; i < value.length; i++) {
+                                appendGeneric(section, key, value[i])
+                            }
+                        } else {
+                            appendGeneric(section, key, value)
+                        }
+                        break;
                 }
             }
         }
@@ -459,6 +502,22 @@
             }
             div.appendChild(createRemoveButton(div));
         }
+        function appendGeneric(container, sectionId, data) {
+            var div = createDiv('m-1')
+            container.appendChild(div)
+
+            var sectionKey = createKeyAdditional(sectionId, container.children.length - 1) // -1 due add button
+            let keys = Object.keys(data)
+            for (var key of keys) {
+                let value = data[key]
+
+                let itemKey = `${sectionKey}.${key}`
+                var placeholder = key
+                var caption = `${sectionId} ${key}`
+                appendTextField(div, itemKey, caption, getOrEmpty(value), placeholder);
+            }
+            div.appendChild(createRemoveButton(div));
+        }
 
         function createRemoveButton(container) {
             var b = document.createElement("button")
@@ -468,6 +527,9 @@
                 container.remove()
             })
             return b
+        }
+        function createKeyAdditional(section, counter) {
+            return counter == null ? `additional.${section}` : `additional.${section}.${counter}`
         }
         function createKey(section, counter) {
             return `${section}.${counter}`
@@ -547,13 +609,20 @@
 
         function mergeModelKeys(sectionId) {
             var keys = new Set();
-            for (var key of Object.keys(specModel[sectionId][0])) {
-                keys.add(key)
+
+            // While creating a file there could be additional sections unknown in model (eg. [[UNLS]])
+            if (specModel[sectionId] != null) {
+                for (var key of Object.keys(specModel[sectionId][0])) {
+                    keys.add(key)
+                }
             }
 
             // Some sections may be omitted
             if (currentModel[sectionId] != null) {
-                for (var key of Object.keys(currentModel[sectionId][0])) {
+                var elem = Array.isArray(currentModel[sectionId])
+                    ? currentModel[sectionId][0]
+                    : currentModel[sectionId]
+                for (var key of Object.keys(elem)) {
                     keys.add(key)
                 }
             }
@@ -629,6 +698,8 @@
                         "titleValidators": "Validatoren",
                         "titleServer": "Server",
                         "titleCurrencies": "Emittierte Währungen",
+                        "titleAdditional": "Zusätzliche Sektionen",
+                        "none": "keine",
 
                         "loadingError404": "{{- url}} konnte nicht gefunden werden.",
                         "loadingErrorGeneric": "Laden von {{- url}} schlug mit Fehler {{code}} fehl.",
