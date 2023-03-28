@@ -186,7 +186,8 @@
                 let keys = mergeModelKeys(sectionId)
                 for (var key of keys) {
                     let elementId = `${sectionElementPrefix}.${i}.${key}`
-                    append(sectionContent, key, getOrNull(document.getElementById(elementId)))
+                    var value = getTypedValueOrNull(sectionId, key, document.getElementById(elementId))
+                    append(sectionContent, key, value)
                 }
 
                 // Ignore empty sections
@@ -497,6 +498,14 @@
             appendCurrency(document.getElementById("currencies"), {})
         }
 
+        function getTypedValueOrNull(sectionId, key, txt) {
+            var numbers = new Set()
+            numbers.add('SERVERS.port')
+            numbers.add('CURRENCIES.display_decimals')
+
+            var key = `${sectionId}.${key}`
+            return numbers.has(key) ? getNumberOrNull(txt) : getOrNull(txt)
+        }
         function getOrDefault(value, defaultValue) {
             return value == null ? defaultValue : value
         }
