@@ -392,13 +392,42 @@
             var div = createDiv('m-1')
             container.appendChild(div)
 
-            var key = createKey("validators", container.children.length - 1) // -1 due add button
-            appendTextField(div, `${key}.public_key`, "Public Key", getOrEmpty(data.public_key), "rn8A9923tg...");
-            appendTextField(div, `${key}.attestation`, "Attestation", getOrEmpty(data.attestation), "F0D14D7...");
-            appendTextField(div, `${key}.network`, "Network", getOrEmpty(data.network), "main");
-            appendTextField(div, `${key}.owner_country`, "Country Owner", getOrEmpty(data.owner_country), "US");
-            appendTextField(div, `${key}.server_country`, "Country Server", getOrEmpty(data.server_country), "US");
-            appendTextField(div, `${key}.unl`, "UNL", getOrEmpty(data.unl));
+            var sectionKey = createKey("validators", container.children.length - 1) // -1 due add button
+            let keys = mergeModelKeys('VALIDATORS')
+            for (var key of keys) {
+                let value = data[key]
+
+                let itemKey = `${sectionKey}.${key}`
+                var placeholder = key
+                var caption = key
+                switch (key) {
+                    case 'public_key':
+                        caption = "Public Key"
+                        placeholder = "rn8A9923tg..."
+                        break
+                    case 'attestation':
+                        caption = "Attestation"
+                        placeholder = "F0D14D7..."
+                        break
+                    case 'network':
+                        caption = "Network"
+                        placeholder = "main"
+                        break
+                    case 'owner_country':
+                        caption = "Country Owner"
+                        placeholder = "US"
+                        break
+                    case 'server_country':
+                        caption = "Country Server"
+                        placeholder = "US"
+                        break
+                    case 'unl':
+                        caption = "UNL"
+                        placeholder = ""
+                        break
+                }
+                appendTextField(div, itemKey, caption, getOrEmpty(value), placeholder);
+            }
             div.appendChild(createRemoveButton(div));
         }
         function appendServer(container, data) {
