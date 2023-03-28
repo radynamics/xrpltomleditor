@@ -350,6 +350,10 @@
                     case 'name': placeholder = i18next.t('placeholderCompany'); break
                     case 'email': placeholder = i18next.t('placeholderMail'); break
                 }
+                // Show caption label for additional unknown values
+                if (placeholder === key) {
+                    d.appendChild(createLabel(placeholder, itemKey))
+                }
                 d.appendChild(createInputText(itemKey, getOrEmpty(value), placeholder))
             }
             {
