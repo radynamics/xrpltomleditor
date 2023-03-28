@@ -110,7 +110,7 @@
     <script type="text/javascript">
         function openUrl() {
             var url = document.getElementById('url').value.trim()
-            if(url.length == 0) return
+            if (url.length == 0) return
             if (!url.startsWith('https://') && !url.startsWith('http://')) {
                 url = `https://${url}`
                 document.getElementById('url').value = url
@@ -125,7 +125,7 @@
             fetch(loaderUrl)
                 .then((res) => {
                     if (res.status != 200) {
-                        if(res.status == 404) {
+                        if (res.status == 404) {
                             showError(i18next.t('loadingError404', { url: tomlUrl }))
                         } else {
                             showError(i18next.t('loadingErrorGeneric', { url: tomlUrl, code: res.status }))
@@ -133,7 +133,7 @@
                     }
                     return res.text()
                 })
-                .then(text =>  loadToml(text))
+                .then(text => loadToml(text))
                 .catch(err => {
                     console.error(err)
                     showError(i18next.t('loadingException', { msg: err.message }))
@@ -160,82 +160,6 @@
             download(toml);
         }
         function createToml() {
-            var principals = []
-            {
-                var children = document.getElementById("principals").children
-                for (var i = 0; i < children.length; i++) {
-                    var key = createKey("principals", i)
-                    principals.push(
-                        {
-                            name: document.getElementById(`${key}.name`).value,
-                            email: getOrNull(document.getElementById(`${key}.email`)),
-                        }
-                    )
-                }
-            }
-            var accounts = []
-            {
-                var children = document.getElementById("accounts").children
-                for (var i = 0; i < children.length; i++) {
-                    var key = createKey("accounts", i)
-                    accounts.push(
-                        {
-                            address: document.getElementById(`${key}.address`).value,
-                            network: getOrNull(document.getElementById(`${key}.network`)),
-                            desc: getOrNull(document.getElementById(`${key}.desc`)),
-                        }
-                    )
-                }
-            }
-            var validators = []
-            {
-                var children = document.getElementById("validators").children
-                for (var i = 0; i < children.length; i++) {
-                    var key = createKey("validators", i)
-                    validators.push(
-                        {
-                            public_key: document.getElementById(`${key}.public_key`).value,
-                            attestation: getOrNull(document.getElementById(`${key}.attestation`)),
-                            network: getOrNull(document.getElementById(`${key}.network`)),
-                            owner_country: getOrNull(document.getElementById(`${key}.owner_country`)),
-                            server_country: getOrNull(document.getElementById(`${key}.server_country`)),
-                            unl: getOrNull(document.getElementById(`${key}.unl`)),
-                        }
-                    )
-                }
-            }
-            var servers = []
-            {
-                var children = document.getElementById("servers").children
-                for (var i = 0; i < children.length; i++) {
-                    var key = createKey("servers", i)
-                    servers.push(
-                        {
-                            json_rpc: getOrNull(document.getElementById(`${key}.json_rpc`)),
-                            ws: getOrNull(document.getElementById(`${key}.ws`)),
-                            peer: getOrNull(document.getElementById(`${key}.peer`)),
-                            network: getOrNull(document.getElementById(`${key}.network`)),
-                        }
-                    )
-                }
-            }
-            var currencies = []
-            {
-                var children = document.getElementById("currencies").children
-                for (var i = 0; i < children.length; i++) {
-                    var key = createKey("currencies", i)
-                    currencies.push(
-                        {
-                            code: document.getElementById(`${key}.code`).value,
-                            issuer: document.getElementById(`${key}.issuer`).value,
-                            network: getOrNull(document.getElementById(`${key}.network`)),
-                            symbol: getOrNull(document.getElementById(`${key}.symbol`)),
-                            display_decimals: getNumberOrNull(document.getElementById(`${key}.display_decimals`)),
-                        }
-                    )
-                }
-            }
-
             var content = []
             content.push(`# For help understanding this xrp-ledger.toml file, see:`)
             content.push(`# https://xrpl.org/xrp-ledger-toml.html`)
@@ -246,54 +170,34 @@
             append(content, 'modified', modified)
             append(content, 'expires', expires)
 
-            for (var i = 0; i < principals.length; i++) {
-                var o = principals[i];
-                content.push(``)
-                content.push(`[[PRINCIPALS]]`)
-                append(content, 'name', o.name)
-                append(content, 'email', o.email)
-            }
-            for (var i = 0; i < accounts.length; i++) {
-                var o = accounts[i];
-                content.push(``)
-                content.push(`[[ACCOUNTS]]`)
-                append(content, 'address', o.address)
-                append(content, 'network', o.network)
-                append(content, 'desc', o.desc)
-            }
-            for (var i = 0; i < validators.length; i++) {
-                var o = validators[i];
-                content.push(``)
-                content.push(`[[VALIDATORS]]`)
-                append(content, 'public_key', o.public_key)
-                append(content, 'attestation', o.attestation)
-                append(content, 'network', o.network)
-                append(content, 'owner_country', o.owner_country)
-                append(content, 'server_country', o.server_country)
-                append(content, 'unl', o.unl)
-            }
-            for (var i = 0; i < servers.length; i++) {
-                var o = servers[i]
-                content.push(``)
-                content.push(`[[SERVERS]]`)
-                append(content, 'json_rpc', o.json_rpc)
-                append(content, 'ws', o.ws)
-                append(content, 'peer', o.peer)
-                append(content, 'network', o.network)
-            }
-            for (var i = 0; i < currencies.length; i++) {
-                var o = currencies[i]
-                content.push(``)
-                content.push(`[[CURRENCIES]]`)
-                append(content, 'code', o.code)
-                append(content, 'issuer', o.issuer)
-                append(content, 'network', o.network)
-                append(content, 'symbol', o.symbol)
-                append(content, 'display_decimals', o.display_decimals)
-            }
+            // Please note, that a loaded xrp-ledger.toml may contain more values in various sections than mentioned in the specification.
+            appendSection(content, "PRINCIPALS", document.getElementById("principals").children, 'principals')
+            appendSection(content, "ACCOUNTS", document.getElementById("accounts").children, 'accounts')
+            appendSection(content, "VALIDATORS", document.getElementById("validators").children, 'validators')
+            appendSection(content, "SERVERS", document.getElementById("servers").children, 'servers')
+            appendSection(content, "CURRENCIES", document.getElementById("currencies").children, 'currencies')
 
             const NEWLINE = '\r\n'
             return content.join(NEWLINE)
+        }
+        function appendSection(content, sectionId, sectionElement, sectionElementPrefix) {
+            for (var i = 0; i < sectionElement.length; i++) {
+                var sectionContent = []
+                let keys = mergeModelKeys(sectionId)
+                for (var key of keys) {
+                    let elementId = `${sectionElementPrefix}.${i}.${key}`
+                    append(sectionContent, key, getOrNull(document.getElementById(elementId)))
+                }
+
+                // Ignore empty sections
+                if (sectionContent.length == 0) continue
+
+                content.push(``)
+                content.push(`[[${sectionId}]]`)
+                for (let i = 0; i < sectionContent.length; i++) {
+                    content.push(sectionContent[i])
+                }
+            }
         }
         function append(content, name, value) {
             if (value == null) return
@@ -329,7 +233,8 @@
         }
 
         function loadToml(content) {
-            var data = TOML.parse(content);
+            currentModel = TOML.parse(content)
+            var data = currentModel
 
             clear()
             var metadata = document.getElementById("metadata")
@@ -426,19 +331,29 @@
             var div = createDiv('row m-1')
             container.appendChild(div)
 
-            var key = createKey("principals", container.children.length - 1) // -1 due add button
-            {
+            var colContainer = createDiv('col')
+            div.appendChild(colContainer)
+            var divInner = createDiv('row row-cols-2')
+            colContainer.appendChild(divInner)
+
+            var sectionKey = createKey("principals", container.children.length - 1) // -1 due add button
+            let keys = mergeModelKeys('PRINCIPALS')
+            for (var key of keys) {
+                let value = data[key]
+
                 var d = createDiv('col')
-                div.appendChild(d)
-                d.appendChild(createInputText(`${key}.name`, getOrEmpty(data.name), i18next.t('placeholderCompany')))
+                divInner.appendChild(d)
+
+                let itemKey = `${sectionKey}.${key}`
+                var placeholder = key
+                switch (key) {
+                    case 'name': placeholder = i18next.t('placeholderCompany'); break
+                    case 'email': placeholder = i18next.t('placeholderMail'); break
+                }
+                d.appendChild(createInputText(itemKey, getOrEmpty(value), placeholder))
             }
             {
-                var d = createDiv('col')
-                div.appendChild(d)
-                d.appendChild(createInputText(`${key}.email`, getOrEmpty(data.email), i18next.t('placeholderMail')))
-            }
-            {
-                var d = createDiv('col-2 d-flex')
+                var d = createDiv('col-2 d-flex align-self-center')
                 div.appendChild(d)
                 d.appendChild(createRemoveButton(div));
             }
@@ -486,23 +401,72 @@
             var div = createDiv('m-1')
             container.appendChild(div)
 
-            var key = createKey("servers", container.children.length - 1) // -1 due add button
-            appendTextField(div, `${key}.json_rpc`, "JSON RPC", getOrEmpty(data.json_rpc), "https://xrpl.ws");
-            appendTextField(div, `${key}.ws`, "WebSocket RPC", getOrEmpty(data.ws), "wss://xrpl.ws");
-            appendTextField(div, `${key}.peer`, "Peer", getOrEmpty(data.peer));
-            appendTextField(div, `${key}.network`, "Network", getOrEmpty(data.network), "main");
+            var sectionKey = createKey("servers", container.children.length - 1) // -1 due add button
+            let keys = mergeModelKeys('SERVERS')
+            for (var key of keys) {
+                let value = data[key]
+
+                let itemKey = `${sectionKey}.${key}`
+                var placeholder = key
+                var caption = key
+                switch (key) {
+                    case 'json_rpc':
+                        caption = "JSON RPC"
+                        placeholder = "https://xrpl.ws"
+                        break
+                    case 'ws':
+                        caption = "WebSocket RPC"
+                        placeholder = "wss://xrpl.ws"
+                        break
+                    case 'peer':
+                        caption = "Peer"
+                        placeholder = ""
+                        break
+                    case 'network':
+                        caption = "Network"
+                        placeholder = "main"
+                        break
+                }
+                appendTextField(div, itemKey, caption, getOrEmpty(value), placeholder);
+            }
             div.appendChild(createRemoveButton(div));
         }
         function appendCurrency(container, data) {
             var div = createDiv('m-1')
             container.appendChild(div)
 
-            var key = createKey("currencies", container.children.length - 1) // -1 due add button
-            appendTextField(div, `${key}.code`, "Code", getOrEmpty(data.code), "USD");
-            appendTextField(div, `${key}.issuer`, "Issuer", getOrEmpty(data.issuer), "rn8A9923tg...");
-            appendTextField(div, `${key}.network`, "Network", getOrEmpty(data.network), "main");
-            appendTextField(div, `${key}.symbol`, "Symbol", getOrEmpty(data.symbol), "$");
-            appendTextField(div, `${key}.display_decimals`, "Display decimals", getOrEmpty(data.display_decimals), "2");
+            var sectionKey = createKey("currencies", container.children.length - 1) // -1 due add button
+            let keys = mergeModelKeys('CURRENCIES')
+            for (var key of keys) {
+                let value = data[key]
+
+                let itemKey = `${sectionKey}.${key}`
+                var placeholder = key
+                var caption = key
+                switch (key) {
+                    case 'code':
+                        caption = "Code"
+                        placeholder = "USD"
+                        break
+                    case 'issuer':
+                        caption = "Issuer"
+                        placeholder = "rn8A9923tg..."
+                        break
+                    case 'network':
+                        caption = "Network"
+                        placeholder = "main"
+                        break
+                    case 'symbol':
+                        caption = "Symbol"
+                        placeholder = "$"
+                        break
+                    case 'display_decimals':
+                        caption = "Display decimals"
+                        placeholder = "2"
+                        break
+                }
+                appendTextField(div, itemKey, caption, getOrEmpty(value), placeholder);
+            }
             div.appendChild(createRemoveButton(div));
         }
 
@@ -555,8 +519,8 @@
         }
         function getDateOrNull(txt) {
             var value = getOrNull(txt)
-            if(value == null) return null
-            var date = Date.parse(value)            
+            if (value == null) return null
+            var date = Date.parse(value)
             return date == NaN ? null : new Date(date)
         }
         function getNumberOrNull(txt) {
@@ -582,6 +546,56 @@
                 ].join(':')
             );
         }
+
+        function mergeModelKeys(sectionId) {
+            var keys = new Set();
+            for (var key of Object.keys(specModel[sectionId][0])) {
+                keys.add(key)
+            }
+
+            // Some sections may be omitted
+            if (currentModel[sectionId] != null) {
+                for (var key of Object.keys(currentModel[sectionId][0])) {
+                    keys.add(key)
+                }
+            }
+            return keys;
+        }
+        function createEmptyToml() {
+            return {
+                "METADATA": {
+                    "modified": "", "expires": "",
+                },
+                "PRINCIPALS": [
+                    {
+                        "name": "", "email": "",
+                    }
+                ],
+                "ACCOUNTS": [
+                    {
+                        "address": "", "network": "", "desc": "",
+                    }
+                ],
+                "VALIDATORS": [
+                    {
+                        "public_key": "", "attestation": "", "network": "", "owner_country": "", "server_country": "", "unl": ""
+                    }
+                ],
+                "SERVERS": [
+                    {
+                        "json_rpc": "", "ws": "", "peer": "", "network": "",
+                    }
+                ],
+                "CURRENCIES": [
+                    {
+                        "code": "", "issuer": "", "display_decimals": "", "network": "", "symbol": "",
+                    }
+                ]
+            }
+        }
+
+        var specModel = createEmptyToml()
+        var currentModel = specModel
 
         window.addEventListener("load", init);
         document.getElementById("download").addEventListener("click", downloadToml);
