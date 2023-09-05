@@ -35,7 +35,10 @@
             <div class="input-group mb-3">
                 <input type="text" class="form-control" id="url" aria-describedby="basic-addon3" placeholder="https://www.bithomp.com" value="">
                 <span class="input-group-text" id="urlSuffix">/.well-known/xrp-ledger.toml</span>
-                <button class="btn btn-primary" type="button" id="openUrl" data-i18n="load">Load</button>
+                <button class="btn btn-primary" type="button" id="openUrl">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loadSpinner"></span>
+                    <span id="loadLabel" data-i18n="load">Load</span>
+                </button>
             </div>
             <div class="d-flex justify-content-center">
                 <div class="col-6">
@@ -122,6 +125,8 @@
                 document.getElementById('url').value = url
             }
 
+            updateLoading(true)
+
             var tomlUrl = url + document.getElementById('urlSuffix').innerText
             // Workaround for missing CORS config.
             var loaderUrl = `loader.php?url=${tomlUrl}`
@@ -139,8 +144,12 @@
                     }
                     return res.text()
                 })
-                .then(text => loadToml(text))
+                .then(text => {
+                    loadToml(text)
+                    updateLoading(false)
+                })
                 .catch(err => {
+                    updateLoading(false)
                     console.error(err)
                     showError(i18next.t('loadingException', { msg: err.message }))
                 })
@@ -161,6 +170,16 @@
             reader.readAsText(file);
         }
 
+        function updateLoading(isLoading) {
+            document.getElementById('loadLabel').innerText = isLoading ? i18next.t('loading') : i18next.t('load')
+            document.getElementById('openUrl').disabled = isLoading
+            let spinner = document.getElementById('loadSpinner')
+            if (isLoading) {
+                spinner.classList.remove('d-none')
+            } else {
+                spinner.classList.add('d-none')
+            }
+        }
         function downloadToml() {
             var toml = createToml()
             download(toml);
@@ -688,6 +707,7 @@
 
                         "createXrpLedgerToml": "xrp-ledger.toml erstellen",
                         "load": "Laden",
+                        "loading": "Lade...",
                         "orLocalFile": "oder öffnen Sie eine lokale Datei",
                         "titleMetadata": "Metadaten",
                         "titlePrincipals": "Eigentümer",
@@ -717,6 +737,8 @@
                 },
                 en: {
                     translation: {
+                        "load": "Load",
+                        "loading": "Loading...",
                         "remove": "Remove",
 
                         "loadingError404": "Could not find {{- url}}",
