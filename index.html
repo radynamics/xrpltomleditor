@@ -558,6 +558,12 @@
             addMetadata()
             addPrincipal()
             addAccount()
+
+            const queryParams = new URLSearchParams(window.location.search)
+            if(queryParams.has('url')) {
+                 document.getElementById('url').value = decodeURIComponent(queryParams.get('url'))
+                 openUrl()
+            }
         }
 
         function addMetadata() {
